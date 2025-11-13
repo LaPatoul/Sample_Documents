@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-
-const API_BASE = 'http://192.168.1.46:5000/api';
+import { API_BASE } from '../config/api';
 
 function DocumentForm({ onGenerated }) {
   const { t, i18n } = useTranslation();
