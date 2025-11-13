@@ -7,9 +7,9 @@ import random
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.colors import HexColor, colors
-from ..utils.pdf_generator import PDFGenerator
-from ..utils.i18n import get_translation, format_date, format_currency
-from ..utils.faker_data import get_generator
+from utils.pdf_generator import PDFGenerator
+from utils.i18n import get_translation, format_date, format_currency
+from utils.faker_data import get_generator
 
 class ReceiptGenerator:
     def __init__(self, language='fr', template_style='modern'):

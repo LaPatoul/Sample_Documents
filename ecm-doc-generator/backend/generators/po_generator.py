@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import random
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from ..utils.pdf_generator import PDFGenerator
-from ..utils.i18n import get_translation, format_date, format_currency, get_tax_rate
-from ..utils.faker_data import get_generator
+from utils.pdf_generator import PDFGenerator
+from utils.i18n import get_translation, format_date, format_currency, get_tax_rate
+from utils.faker_data import get_generator
 
 class PurchaseOrderGenerator:
     def __init__(self, language='fr', template_style='modern'):
