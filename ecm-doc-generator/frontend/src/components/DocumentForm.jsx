@@ -8,7 +8,7 @@ function DocumentForm({ onGenerated }) {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     document_type: 'invoice',
-    language: 'fr',
+    language: 'en-GB',
     template_style: 'modern',
     output_format: 'pdf',
     quantity: 1,
@@ -119,8 +119,11 @@ function DocumentForm({ onGenerated }) {
               onChange={handleChange}
               className="select-field"
             >
+              <option value="en-GB">{t('english_uk')}</option>
+              <option value="en-US">{t('english_us')}</option>
               <option value="fr">{t('french')}</option>
               <option value="de">{t('german')}</option>
+              <option value="es">{t('spanish')}</option>
             </select>
           </div>
 

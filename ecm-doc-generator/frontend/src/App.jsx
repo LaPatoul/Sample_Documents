@@ -29,26 +29,56 @@ function App() {
               <h1 className="text-3xl font-bold">{t('app_title')}</h1>
               <p className="text-primary-100 mt-1">{t('app_subtitle')}</p>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => changeLanguage('en-GB')}
+                className={`px-3 py-2 rounded-lg transition text-sm ${
+                  i18n.language === 'en-GB'
+                    ? 'bg-white text-primary-600 font-semibold'
+                    : 'bg-primary-700 hover:bg-primary-600'
+                }`}
+              >
+                🇬🇧 EN-GB
+              </button>
+              <button
+                onClick={() => changeLanguage('en-US')}
+                className={`px-3 py-2 rounded-lg transition text-sm ${
+                  i18n.language === 'en-US'
+                    ? 'bg-white text-primary-600 font-semibold'
+                    : 'bg-primary-700 hover:bg-primary-600'
+                }`}
+              >
+                🇺🇸 EN-US
+              </button>
               <button
                 onClick={() => changeLanguage('fr')}
-                className={`px-4 py-2 rounded-lg transition ${
+                className={`px-3 py-2 rounded-lg transition text-sm ${
                   i18n.language === 'fr'
                     ? 'bg-white text-primary-600 font-semibold'
                     : 'bg-primary-700 hover:bg-primary-600'
                 }`}
               >
-                FR
+                🇫🇷 FR
               </button>
               <button
                 onClick={() => changeLanguage('de')}
-                className={`px-4 py-2 rounded-lg transition ${
+                className={`px-3 py-2 rounded-lg transition text-sm ${
                   i18n.language === 'de'
                     ? 'bg-white text-primary-600 font-semibold'
                     : 'bg-primary-700 hover:bg-primary-600'
                 }`}
               >
-                DE
+                🇩🇪 DE
+              </button>
+              <button
+                onClick={() => changeLanguage('es')}
+                className={`px-3 py-2 rounded-lg transition text-sm ${
+                  i18n.language === 'es'
+                    ? 'bg-white text-primary-600 font-semibold'
+                    : 'bg-primary-700 hover:bg-primary-600'
+                }`}
+              >
+                🇪🇸 ES
               </button>
             </div>
           </div>

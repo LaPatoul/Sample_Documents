@@ -93,8 +93,11 @@ function History() {
               className="select-field"
             >
               <option value="">{t('all')}</option>
+              <option value="en-GB">{t('english_uk')}</option>
+              <option value="en-US">{t('english_us')}</option>
               <option value="fr">{t('french')}</option>
               <option value="de">{t('german')}</option>
+              <option value="es">{t('spanish')}</option>
             </select>
           </div>
 

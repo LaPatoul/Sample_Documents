@@ -9,12 +9,19 @@ class DataGenerator:
 
     def generate_company(self):
         """Generate a fake company"""
+        country_map = {
+            'en_GB': 'United Kingdom',
+            'en_US': 'United States',
+            'fr_FR': 'France',
+            'de_DE': 'Germany',
+            'es_ES': 'Spain',
+        }
         return {
             'name': self.faker.company(),
             'address': self.faker.street_address(),
             'city': self.faker.city(),
             'postal_code': self.faker.postcode(),
-            'country': 'France' if self.locale == 'fr_FR' else 'Germany',
+            'country': country_map.get(self.locale, 'United Kingdom'),
             'phone': self.faker.phone_number(),
             'email': self.faker.company_email(),
             'tax_id': self.faker.bothify(text='??-########'),
@@ -152,10 +159,13 @@ class DataGenerator:
         number = random.randint(1000, 9999)
         return f"{prefix}-{year}-{number}"
 
-def get_generator(language='fr'):
+def get_generator(language='en-GB'):
     """Factory function to get appropriate data generator"""
     locale_map = {
+        'en-GB': 'en_GB',
+        'en-US': 'en_US',
         'fr': 'fr_FR',
-        'de': 'de_DE'
+        'de': 'de_DE',
+        'es': 'es_ES',
     }
-    return DataGenerator(locale_map.get(language, 'fr_FR'))
+    return DataGenerator(locale_map.get(language, 'en_GB'))
