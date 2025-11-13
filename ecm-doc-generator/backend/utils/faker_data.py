@@ -38,6 +38,10 @@ class DataGenerator:
             'address': self.faker.address()
         }
 
+    def generate_customer(self):
+        """Generate a fake customer (alias for generate_company)"""
+        return self.generate_company()
+
     def generate_invoice_items(self, count=None):
         """Generate invoice line items"""
         if count is None:
@@ -108,6 +112,10 @@ class DataGenerator:
 
         return items
 
+    def generate_order_items(self, count=None):
+        """Generate order items (alias for purchase_order_items)"""
+        return self.generate_purchase_order_items(count)
+
     def generate_receipt_items(self, count=None):
         """Generate receipt line items"""
         if count is None:
@@ -153,7 +161,12 @@ class DataGenerator:
         prefix_map = {
             'invoice': 'INV',
             'purchase_order': 'PO',
-            'receipt': 'RCP'
+            'receipt': 'RCP',
+            'order': 'ORD',
+            'delivery_note': 'DN',
+            'payslip': 'PAY',
+            'contract': 'CNT',
+            'expense': 'EXP'
         }
 
         prefix = prefix_map.get(doc_type, 'DOC')
