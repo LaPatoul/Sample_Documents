@@ -18,6 +18,12 @@ from models import init_db, Company, Document, GenerationLog
 from generators.invoice_generator import InvoiceGenerator
 from generators.po_generator import PurchaseOrderGenerator
 from generators.receipt_generator import ReceiptGenerator
+from generators.order_generator import OrderGenerator
+from generators.delivery_note_generator import DeliveryNoteGenerator
+from generators.payslip_generator import PayslipGenerator
+from generators.contract_generator import ContractGenerator
+from generators.expense_report_generator import ExpenseReportGenerator
+from generators.id_document_generator import IDDocumentGenerator
 from utils.faker_data import get_generator
 
 app = Flask(__name__)
@@ -30,7 +36,8 @@ session = init_db(db_path)
 
 # Ensure storage directories exist
 storage_base = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage')
-for doc_type in ['invoices', 'purchase_orders', 'receipts']:
+for doc_type in ['invoices', 'purchase_orders', 'receipts', 'orders', 'delivery_notes',
+                  'payslips', 'contracts', 'expense_reports', 'id_documents']:
     os.makedirs(os.path.join(storage_base, doc_type), exist_ok=True)
 
 
@@ -171,17 +178,61 @@ def generate_document():
                 company_data=company_data,
                 output_format=output_format
             )
+        elif doc_type == 'order':
+            generator = OrderGenerator(language, template_style)
+            doc_data = generator.generate(
+                company_data=company_data,
+                output_format=output_format
+            )
+        elif doc_type == 'delivery_note':
+            generator = DeliveryNoteGenerator(language, template_style)
+            doc_data = generator.generate(
+                company_data=company_data,
+                output_format=output_format
+            )
+        elif doc_type == 'payslip':
+            generator = PayslipGenerator(language, template_style)
+            doc_data = generator.generate(
+                company_data=company_data,
+                output_format=output_format
+            )
+        elif doc_type == 'contract':
+            generator = ContractGenerator(language, template_style)
+            doc_data = generator.generate(
+                company_data=company_data,
+                output_format=output_format
+            )
+        elif doc_type == 'expense_report':
+            generator = ExpenseReportGenerator(language, template_style)
+            doc_data = generator.generate(
+                company_data=company_data,
+                output_format=output_format
+            )
+        elif doc_type in ['id_card', 'carte_vitale', 'drivers_license']:
+            generator = IDDocumentGenerator(language, template_style)
+            doc_data = generator.generate(
+                document_type=doc_type,
+                output_format=output_format
+            )
         else:
             return jsonify({'error': 'Invalid document type'}), 400
+
+        # Extract document number based on type
+        doc_number = (doc_data.get('invoice_number') or doc_data.get('po_number') or
+                     doc_data.get('receipt_number') or doc_data.get('order_number') or
+                     doc_data.get('delivery_note_number') or doc_data.get('payslip_number') or
+                     doc_data.get('contract_number') or doc_data.get('report_number') or
+                     doc_data.get('document_number'))
 
         # Save document metadata to database
         doc = Document(
             document_type=doc_type,
-            document_number=doc_data.get('invoice_number') or doc_data.get('po_number') or doc_data.get('receipt_number'),
+            document_number=doc_number,
+            order_number=doc_data.get('order_number'),  # For linking related documents
             template_style=template_style,
             language=language,
             company_id=company_id,
-            customer_name=doc_data.get('customer', {}).get('name') or doc_data.get('vendor', {}).get('name'),
+            customer_name=doc_data.get('customer', {}).get('name') or doc_data.get('vendor', {}).get('name') or doc_data.get('employee', {}).get('name'),
             total_amount=doc_data.get('total'),
             currency='EUR',
             file_path=doc_data['file_path'],
@@ -301,17 +352,67 @@ def generate_bulk():
                     receipt_date=doc_date,
                     output_format=output_format
                 )
+            elif doc_type == 'order':
+                generator = OrderGenerator(language, template_style)
+                doc_data = generator.generate(
+                    company_data=current_company_data,
+                    order_date=doc_date,
+                    output_format=output_format
+                )
+            elif doc_type == 'delivery_note':
+                generator = DeliveryNoteGenerator(language, template_style)
+                doc_data = generator.generate(
+                    company_data=current_company_data,
+                    delivery_date=doc_date,
+                    output_format=output_format
+                )
+            elif doc_type == 'payslip':
+                generator = PayslipGenerator(language, template_style)
+                doc_data = generator.generate(
+                    company_data=current_company_data,
+                    pay_date=doc_date,
+                    output_format=output_format
+                )
+            elif doc_type == 'contract':
+                generator = ContractGenerator(language, template_style)
+                doc_data = generator.generate(
+                    company_data=current_company_data,
+                    contract_date=doc_date,
+                    output_format=output_format
+                )
+            elif doc_type == 'expense_report':
+                generator = ExpenseReportGenerator(language, template_style)
+                doc_data = generator.generate(
+                    company_data=current_company_data,
+                    report_date=doc_date,
+                    output_format=output_format
+                )
+            elif doc_type in ['id_card', 'carte_vitale', 'drivers_license']:
+                generator = IDDocumentGenerator(language, template_style)
+                doc_data = generator.generate(
+                    document_type=doc_type,
+                    issue_date=doc_date,
+                    output_format=output_format
+                )
 
             generated_files.append(doc_data['file_path'])
+
+            # Extract document number
+            doc_number = (doc_data.get('invoice_number') or doc_data.get('po_number') or
+                         doc_data.get('receipt_number') or doc_data.get('order_number') or
+                         doc_data.get('delivery_note_number') or doc_data.get('payslip_number') or
+                         doc_data.get('contract_number') or doc_data.get('report_number') or
+                         doc_data.get('document_number'))
 
             # Save document metadata
             doc = Document(
                 document_type=doc_type,
-                document_number=doc_data.get('invoice_number') or doc_data.get('po_number') or doc_data.get('receipt_number'),
+                document_number=doc_number,
+                order_number=doc_data.get('order_number'),
                 template_style=template_style,
                 language=language,
                 company_id=company_id,
-                customer_name=doc_data.get('customer', {}).get('name') or doc_data.get('vendor', {}).get('name'),
+                customer_name=doc_data.get('customer', {}).get('name') or doc_data.get('vendor', {}).get('name') or doc_data.get('employee', {}).get('name'),
                 total_amount=doc_data.get('total'),
                 currency='EUR',
                 file_path=doc_data['file_path'],
@@ -445,6 +546,14 @@ def get_stats():
     total_invoices = session.query(Document).filter_by(document_type='invoice').count()
     total_pos = session.query(Document).filter_by(document_type='purchase_order').count()
     total_receipts = session.query(Document).filter_by(document_type='receipt').count()
+    total_orders = session.query(Document).filter_by(document_type='order').count()
+    total_delivery_notes = session.query(Document).filter_by(document_type='delivery_note').count()
+    total_payslips = session.query(Document).filter_by(document_type='payslip').count()
+    total_contracts = session.query(Document).filter_by(document_type='contract').count()
+    total_expense_reports = session.query(Document).filter_by(document_type='expense_report').count()
+    total_id_docs = (session.query(Document).filter_by(document_type='id_card').count() +
+                     session.query(Document).filter_by(document_type='carte_vitale').count() +
+                     session.query(Document).filter_by(document_type='drivers_license').count())
 
     recent_logs = session.query(GenerationLog).order_by(GenerationLog.created_at.desc()).limit(10).all()
 
@@ -453,7 +562,13 @@ def get_stats():
         'by_type': {
             'invoices': total_invoices,
             'purchase_orders': total_pos,
-            'receipts': total_receipts
+            'receipts': total_receipts,
+            'orders': total_orders,
+            'delivery_notes': total_delivery_notes,
+            'payslips': total_payslips,
+            'contracts': total_contracts,
+            'expense_reports': total_expense_reports,
+            'id_documents': total_id_docs
         },
         'recent_activity': [log.to_dict() for log in recent_logs]
     })
