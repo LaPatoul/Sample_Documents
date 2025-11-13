@@ -82,57 +82,122 @@ class InvoiceGenerator:
         return doc_data
 
     def _generate_pdf(self, data, output_path):
-        """Generate PDF invoice"""
+        """Generate professional PDF invoice"""
         if output_path is None:
             filename = f"{data['invoice_number'].replace('/', '-')}.pdf"
-            # Use absolute path to project root's storage directory
             project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             output_path = os.path.join(project_root, 'storage', 'invoices', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        pdf = PDFGenerator(output_path)
+        from reportlab.pdfgen import canvas as pdf_canvas
+        from reportlab.lib.colors import HexColor, black, grey
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Table, TableStyle
 
-        # Add watermark
+        c = pdf_canvas.Canvas(output_path, pagesize=A4)
+        width, height = A4
+        margin = 20*mm
+
+        # ============ WATERMARK (CENTERED) ============
+        c.saveState()
+        c.setFont("Helvetica-Bold", 50)
+        c.setFillColorRGB(0.9, 0.9, 0.9, alpha=0.3)
+        c.translate(width/2, height/2)
+        c.rotate(45)
         watermark_text = get_translation('sample_watermark', self.language)
-        pdf.add_watermark(watermark_text)
+        watermark_width = c.stringWidth(watermark_text, "Helvetica-Bold", 50)
+        c.drawString(-watermark_width/2, 0, watermark_text)
+        c.restoreState()
 
-        # Draw header
+        # ============ COMPACT HEADER ============
+        y = height - margin - 10*mm
+
+        # Company name (left) - simple, black
+        c.setFont("Helvetica-Bold", 16)
+        c.setFillColor(black)
+        c.drawString(margin, y, data['company']['name'])
+
+        # INVOICE title (right) - professional
         doc_title = get_translation('invoice', self.language).upper()
-        if self.template_style == 'modern':
-            y_pos = pdf.draw_header_modern(data['company'], doc_title, self.language)
-        else:
-            y_pos = pdf.draw_header_classic(data['company'], doc_title, self.language)
+        c.setFont("Helvetica-Bold", 24)
+        c.setFillColor(HexColor('#2c5282'))  # Professional dark blue
+        title_width = c.stringWidth(doc_title, "Helvetica-Bold", 24)
+        c.drawString(width - margin - title_width, y, doc_title)
 
-        y_pos -= 10*mm
+        y -= 15*mm
 
-        # Invoice info and dates (right side)
-        info_width = 70*mm
-        info_x = pdf.width - pdf.margin - info_width
+        # Horizontal line separator
+        c.setStrokeColor(HexColor('#cbd5e0'))
+        c.setLineWidth(0.5)
+        c.line(margin, y, width - margin, y)
 
-        invoice_info = [
-            f"{get_translation('invoice_number', self.language)}: {data['invoice_number']}",
-            f"{get_translation('date', self.language)}: {format_date(data['invoice_date'], self.language)}",
-            f"{get_translation('due_date', self.language)}: {format_date(data['due_date'], self.language)}"
-        ]
+        y -= 10*mm
 
-        pdf.draw_info_box(info_x, y_pos - 30*mm, info_width, 30*mm,
-                         get_translation('invoice', self.language).upper(), invoice_info)
+        # ============ TWO COLUMNS: SELLER & BUYER ============
+        col_width = (width - 2*margin - 10*mm) / 2
 
-        # Customer info (left side)
-        customer_info = [
-            data['customer']['name'],
-            data['customer']['address'],
-            f"{data['customer']['postal_code']} {data['customer']['city']}",
-            data['customer']['country']
-        ]
+        # LEFT: SELLER (From)
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColor(black)
+        c.drawString(margin, y, "FROM:")
 
-        pdf.draw_info_box(pdf.margin, y_pos - 30*mm, info_width, 30*mm,
-                         get_translation('bill_to', self.language).upper(), customer_info)
+        c.setFont("Helvetica", 9)
+        y -= 5*mm
+        c.drawString(margin, y, data['company']['name'])
+        y -= 4*mm
+        c.drawString(margin, y, data['company']['address'])
+        y -= 4*mm
+        c.drawString(margin, y, f"{data['company']['postal_code']} {data['company']['city']}")
+        y -= 4*mm
+        c.drawString(margin, y, data['company']['country'])
+        y -= 4*mm
+        c.drawString(margin, y, f"Tel: {data['company']['phone']}")
+        y -= 4*mm
+        c.drawString(margin, y, f"Email: {data['company']['email']}")
 
-        y_pos -= 35*mm
+        # RIGHT: BUYER (To)
+        y_right = height - margin - 25*mm - 10*mm
+        x_right = margin + col_width + 10*mm
 
-        # Items table
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(x_right, y_right, get_translation('bill_to', self.language).upper() + ":")
+
+        c.setFont("Helvetica", 9)
+        y_right -= 5*mm
+        c.drawString(x_right, y_right, data['customer']['name'])
+        y_right -= 4*mm
+        c.drawString(x_right, y_right, data['customer']['address'])
+        y_right -= 4*mm
+        c.drawString(x_right, y_right, f"{data['customer']['postal_code']} {data['customer']['city']}")
+        y_right -= 4*mm
+        c.drawString(x_right, y_right, data['customer']['country'])
+
+        # Invoice details (right column, below buyer)
+        y_right -= 8*mm
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(x_right, y_right, f"{get_translation('invoice_number', self.language)}: ")
+        c.setFont("Helvetica", 9)
+        c.drawString(x_right + 35*mm, y_right, data['invoice_number'])
+
+        y_right -= 4*mm
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(x_right, y_right, f"{get_translation('date', self.language)}: ")
+        c.setFont("Helvetica", 9)
+        c.drawString(x_right + 35*mm, y_right, format_date(data['invoice_date'], self.language))
+
+        y_right -= 4*mm
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(x_right, y_right, f"{get_translation('due_date', self.language)}: ")
+        c.setFont("Helvetica", 9)
+        c.drawString(x_right + 35*mm, y_right, format_date(data['due_date'], self.language))
+
+        # Move to table position
+        y = min(y - 10*mm, y_right - 15*mm)
+
+        # ============ ITEMS TABLE ============
         table_data = [[
             get_translation('description', self.language),
             get_translation('quantity', self.language),
@@ -150,33 +215,93 @@ class InvoiceGenerator:
                 format_currency(item['total'], self.language)
             ])
 
-        col_widths = [80*mm, 20*mm, 15*mm, 30*mm, 30*mm]
-        y_pos = pdf.draw_table(table_data, col_widths, pdf.margin, y_pos, self.template_style)
+        col_widths = [85*mm, 18*mm, 15*mm, 30*mm, 27*mm]
+        table = Table(table_data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), HexColor('#2c5282')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+            ('ALIGN', (-1, 0), (-1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#cbd5e0')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, HexColor('#f7fafc')]),
+        ]))
 
-        y_pos -= 10*mm
+        table.wrapOn(c, width, height)
+        table_height = table._height
+        table.drawOn(c, margin, y - table_height)
 
-        # Totals
-        totals_width = 70*mm
-        totals_x = pdf.width - pdf.margin - totals_width
+        y = y - table_height - 10*mm
 
-        tax_label = f"{get_translation('tax', self.language)} ({int(data['tax_rate']*100)}%)"
-        totals_data = [
-            (get_translation('subtotal', self.language), format_currency(data['subtotal'], self.language), False),
-            (tax_label, format_currency(data['tax_amount'], self.language), False),
-            (get_translation('grand_total', self.language), format_currency(data['total'], self.language), True)
-        ]
+        # ============ TOTALS ============
+        totals_width = 60*mm
+        totals_x = width - margin - totals_width
 
-        pdf.draw_totals_box(totals_x, y_pos, totals_width, totals_data, self.language)
+        c.setFont("Helvetica", 9)
+        c.setFillColor(black)
 
-        # Footer
-        pdf.canvas.setFont("Helvetica", 8)
-        pdf.canvas.setFillColor(pdf.canvas._fillColorObj)
-        footer_text = get_translation('thank_you', self.language)
-        footer_width = pdf.canvas.stringWidth(footer_text, "Helvetica", 8)
-        pdf.canvas.drawString((pdf.width - footer_width) / 2, 30*mm, footer_text)
+        # Subtotal
+        c.drawString(totals_x, y, get_translation('subtotal', self.language) + ":")
+        amount_str = format_currency(data['subtotal'], self.language)
+        c.drawRightString(width - margin, y, amount_str)
 
-        pdf.save()
-        # Return relative path for API
+        y -= 5*mm
+        # Tax
+        tax_label = f"{get_translation('tax', self.language)} ({int(data['tax_rate']*100)}%):"
+        c.drawString(totals_x, y, tax_label)
+        c.drawRightString(width - margin, y, format_currency(data['tax_amount'], self.language))
+
+        y -= 8*mm
+        # Grand total
+        c.setFont("Helvetica-Bold", 11)
+        c.setFillColor(HexColor('#2c5282'))
+        c.drawString(totals_x, y, get_translation('grand_total', self.language).upper() + ":")
+        c.drawRightString(width - margin, y, format_currency(data['total'], self.language))
+
+        # ============ PAYMENT TERMS ============
+        y -= 15*mm
+        c.setFont("Helvetica-Bold", 9)
+        c.setFillColor(black)
+        c.drawString(margin, y, "PAYMENT TERMS:")
+
+        y -= 5*mm
+        c.setFont("Helvetica", 8)
+        c.drawString(margin, y, f"Payment due by: {format_date(data['due_date'], self.language)}")
+
+        y -= 4*mm
+        c.drawString(margin, y, "Bank: Example Bank - IBAN: GB29 NWBK 6016 1331 9268 19")
+
+        y -= 4*mm
+        c.drawString(margin, y, "SWIFT/BIC: EXAMPLEXXX - Account: 12345678")
+
+        # ============ FOOTER ============
+        footer_y = margin + 15*mm
+
+        # Separator line
+        c.setStrokeColor(HexColor('#cbd5e0'))
+        c.line(margin, footer_y + 8*mm, width - margin, footer_y + 8*mm)
+
+        c.setFont("Helvetica", 7)
+        c.setFillColor(grey)
+
+        # Company footer info
+        footer_text = f"{data['company']['name']} | VAT: {data['company'].get('tax_id', 'N/A')} | SIRET: 123 456 789 00012"
+        footer_width = c.stringWidth(footer_text, "Helvetica", 7)
+        c.drawString((width - footer_width)/2, footer_y + 4*mm, footer_text)
+
+        # Address
+        footer_text2 = f"{data['company']['address']}, {data['company']['postal_code']} {data['company']['city']} | {data['company']['phone']} | {data['company']['email']}"
+        footer_width2 = c.stringWidth(footer_text2, "Helvetica", 7)
+        c.drawString((width - footer_width2)/2, footer_y, footer_text2)
+
+        c.save()
+
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         return os.path.relpath(output_path, project_root)
 
