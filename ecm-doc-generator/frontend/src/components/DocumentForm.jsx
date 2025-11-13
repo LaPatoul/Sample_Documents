@@ -5,10 +5,10 @@ import axios from 'axios';
 const API_BASE = 'http://172.24.57.39:5000/api';
 
 function DocumentForm({ onGenerated }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState({
     document_type: 'invoice',
-    language: 'en-GB',
+    language: i18n.language || 'en-GB',
     template_style: 'modern',
     output_format: 'pdf',
     quantity: 1,
@@ -21,6 +21,11 @@ function DocumentForm({ onGenerated }) {
   useEffect(() => {
     loadCompanies();
   }, []);
+
+  // Sync form language with header language switcher
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, language: i18n.language }));
+  }, [i18n.language]);
 
   const loadCompanies = async () => {
     try {
@@ -115,23 +120,6 @@ function DocumentForm({ onGenerated }) {
               <option value="id_card">{t('id_card')}</option>
               <option value="carte_vitale">{t('carte_vitale')}</option>
               <option value="drivers_license">{t('drivers_license')}</option>
-            </select>
-          </div>
-
-          {/* Language */}
-          <div>
-            <label className="label">{t('language')}</label>
-            <select
-              name="language"
-              value={formData.language}
-              onChange={handleChange}
-              className="select-field"
-            >
-              <option value="en-GB">{t('english_uk')}</option>
-              <option value="en-US">{t('english_us')}</option>
-              <option value="fr">{t('french')}</option>
-              <option value="de">{t('german')}</option>
-              <option value="es">{t('spanish')}</option>
             </select>
           </div>
 
