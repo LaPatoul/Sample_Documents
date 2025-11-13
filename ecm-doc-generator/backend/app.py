@@ -73,6 +73,25 @@ def company_to_dict(company):
     }
 
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint with API information"""
+    return jsonify({
+        'name': 'ECM Document Generator API',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'generate': '/api/generate',
+            'bulk_generate': '/api/generate/bulk',
+            'documents': '/api/documents',
+            'companies': '/api/companies',
+            'stats': '/api/stats'
+        },
+        'frontend': 'http://172.24.57.39:3000',
+        'supported_languages': ['en-GB', 'en-US', 'fr', 'de', 'es']
+    })
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint"""
