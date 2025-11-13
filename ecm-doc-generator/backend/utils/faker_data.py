@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 class DataGenerator:
     def __init__(self, locale='fr_FR'):
         self.faker = Faker(locale)
+        self.fake = self.faker  # Alias for compatibility
         self.locale = locale
 
     def generate_company(self):
