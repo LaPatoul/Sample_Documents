@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
-const API_BASE = 'http://172.24.57.39:5000/api';
+const API_BASE = 'http://5.49.237.223:5000/api';
 
 function DocumentForm({ onGenerated }) {
   const { t } = useTranslation();
