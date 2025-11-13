@@ -85,7 +85,9 @@ class InvoiceGenerator:
         """Generate PDF invoice"""
         if output_path is None:
             filename = f"{data['invoice_number'].replace('/', '-')}.pdf"
-            output_path = os.path.join('storage', 'invoices', filename)
+            # Use absolute path to project root's storage directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_path = os.path.join(project_root, 'storage', 'invoices', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -174,13 +176,17 @@ class InvoiceGenerator:
         pdf.canvas.drawString((pdf.width - footer_width) / 2, 30*mm, footer_text)
 
         pdf.save()
-        return output_path
+        # Return relative path for API
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.relpath(output_path, project_root)
 
     def _generate_html(self, data, output_path):
         """Generate HTML invoice"""
         if output_path is None:
             filename = f"{data['invoice_number'].replace('/', '-')}.html"
-            output_path = os.path.join('storage', 'invoices', filename)
+            # Use absolute path to project root's storage directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_path = os.path.join(project_root, 'storage', 'invoices', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -190,7 +196,9 @@ class InvoiceGenerator:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
-        return output_path
+        # Return relative path for API
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.relpath(output_path, project_root)
 
     def _create_html_template(self, data):
         """Create HTML content for invoice"""

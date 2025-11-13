@@ -74,7 +74,9 @@ class ReceiptGenerator:
         """Generate PDF receipt - compact design"""
         if output_path is None:
             filename = f"{data['receipt_number'].replace('/', '-')}.pdf"
-            output_path = os.path.join('storage', 'receipts', filename)
+            # Use absolute path to project root's storage directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_path = os.path.join(project_root, 'storage', 'receipts', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -192,13 +194,17 @@ class ReceiptGenerator:
         pdf.canvas.drawString((pdf.width - thank_you_width) / 2, y_pos, thank_you)
 
         pdf.save()
-        return output_path
+        # Return relative path for API
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.relpath(output_path, project_root)
 
     def _generate_html(self, data, output_path):
         """Generate HTML receipt"""
         if output_path is None:
             filename = f"{data['receipt_number'].replace('/', '-')}.html"
-            output_path = os.path.join('storage', 'receipts', filename)
+            # Use absolute path to project root's storage directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_path = os.path.join(project_root, 'storage', 'receipts', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -207,7 +213,9 @@ class ReceiptGenerator:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
-        return output_path
+        # Return relative path for API
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.relpath(output_path, project_root)
 
     def _create_html_template(self, data):
         """Create HTML content for receipt"""

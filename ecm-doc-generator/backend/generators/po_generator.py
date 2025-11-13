@@ -88,7 +88,9 @@ class PurchaseOrderGenerator:
         """Generate PDF purchase order"""
         if output_path is None:
             filename = f"{data['po_number'].replace('/', '-')}.pdf"
-            output_path = os.path.join('storage', 'purchase_orders', filename)
+            # Use absolute path to project root's storage directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_path = os.path.join(project_root, 'storage', 'purchase_orders', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -173,13 +175,17 @@ class PurchaseOrderGenerator:
         pdf.draw_totals_box(totals_x, y_pos, totals_width, totals_data, self.language)
 
         pdf.save()
-        return output_path
+        # Return relative path for API
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.relpath(output_path, project_root)
 
     def _generate_html(self, data, output_path):
         """Generate HTML purchase order"""
         if output_path is None:
             filename = f"{data['po_number'].replace('/', '-')}.html"
-            output_path = os.path.join('storage', 'purchase_orders', filename)
+            # Use absolute path to project root's storage directory
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_path = os.path.join(project_root, 'storage', 'purchase_orders', filename)
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -188,7 +194,9 @@ class PurchaseOrderGenerator:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
-        return output_path
+        # Return relative path for API
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return os.path.relpath(output_path, project_root)
 
     def _create_html_template(self, data):
         """Create HTML content for purchase order"""
