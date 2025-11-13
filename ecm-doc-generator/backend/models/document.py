@@ -6,10 +6,11 @@ class Document(Base):
     __tablename__ = 'documents'
 
     id = Column(Integer, primary_key=True)
-    document_type = Column(String(50), nullable=False)  # invoice, purchase_order, receipt
+    document_type = Column(String(50), nullable=False)  # invoice, purchase_order, receipt, order, delivery_note, payslip, contract, id_card, expense_report
     document_number = Column(String(100), nullable=False, unique=True)
+    order_number = Column(String(100), nullable=True)  # Links related documents (order → delivery_note → invoice)
     template_style = Column(String(50))  # modern, classic, minimal
-    language = Column(String(10))  # fr, de
+    language = Column(String(10))  # fr, de, en-GB, en-US, es
     company_id = Column(Integer, ForeignKey('companies.id'))
     customer_name = Column(String(200))
     total_amount = Column(Float)
@@ -24,6 +25,7 @@ class Document(Base):
             'id': self.id,
             'document_type': self.document_type,
             'document_number': self.document_number,
+            'order_number': self.order_number,
             'template_style': self.template_style,
             'language': self.language,
             'company_id': self.company_id,
