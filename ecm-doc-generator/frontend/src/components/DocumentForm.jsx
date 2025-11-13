@@ -107,6 +107,14 @@ function DocumentForm({ onGenerated }) {
               <option value="invoice">{t('invoice')}</option>
               <option value="purchase_order">{t('purchase_order')}</option>
               <option value="receipt">{t('receipt')}</option>
+              <option value="order">{t('order')}</option>
+              <option value="delivery_note">{t('delivery_note')}</option>
+              <option value="payslip">{t('payslip')}</option>
+              <option value="contract">{t('contract')}</option>
+              <option value="expense_report">{t('expense_report')}</option>
+              <option value="id_card">{t('id_card')}</option>
+              <option value="carte_vitale">{t('carte_vitale')}</option>
+              <option value="drivers_license">{t('drivers_license')}</option>
             </select>
           </div>
 
