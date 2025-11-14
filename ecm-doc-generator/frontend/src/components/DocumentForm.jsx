@@ -251,16 +251,23 @@ function DocumentForm({ onGenerated }) {
           </div>
         </div>
 
-        {/* Generate Sample Data Button */}
+        {/* Action Buttons for Editable Document Types */}
         {!showEditableForm && ['invoice', 'order', 'delivery_note'].includes(formData.document_type) && (
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-secondary px-8"
+            >
+              {loading ? t('generating') : t('generate_button')}
+            </button>
             <button
               type="button"
               onClick={handleGenerateSample}
               disabled={loading}
               className="btn-primary px-8"
             >
-              {loading ? t('generating') : '🎲 Generate Sample Data'}
+              {loading ? t('generating') : '✏️ Generate & Edit'}
             </button>
           </div>
         )}
