@@ -217,7 +217,8 @@ def generate_sample_data():
                 return jsonify({'error': 'Company not found'}), 404
             company_data = company_to_dict(company)
         else:
-            company_data = get_peters_engineering()
+            # Generate random company data
+            company_data = get_generator(language).generate_company()
 
         # Generate sample data using data generator
         data_gen = get_generator(language)
