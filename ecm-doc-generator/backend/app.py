@@ -135,6 +135,86 @@ def generate_company():
     return jsonify(company_to_dict(company))
 
 
+@app.route('/api/generate/sample-data', methods=['POST'])
+def generate_sample_data():
+    """Generate sample data for a document without creating PDF"""
+    try:
+        data = request.json
+        doc_type = data.get('document_type', 'invoice')
+        language = data.get('language', 'en-GB')
+        company_id = data.get('company_id')
+
+        # Get company data
+        if company_id:
+            company = session.query(Company).get(company_id)
+            if not company:
+                return jsonify({'error': 'Company not found'}), 404
+            company_data = company_to_dict(company)
+        else:
+            company_data = get_peters_engineering()
+
+        # Generate sample data using data generator
+        data_gen = get_generator(language)
+
+        # Generate customer
+        customer_data = data_gen.generate_customer()
+
+        # Generate document-specific data
+        sample_data = {
+            'document_type': doc_type,
+            'language': language,
+            'company': company_data,
+            'customer': customer_data
+        }
+
+        if doc_type in ['invoice', 'order', 'delivery_note']:
+            # Generate items
+            if doc_type == 'invoice':
+                items = data_gen.generate_invoice_items(count=random.randint(3, 6))
+            else:
+                items = data_gen.generate_order_items(count=random.randint(3, 6))
+
+            # Generate document number
+            doc_number = data_gen.generate_document_number(doc_type)
+
+            # Generate dates
+            doc_date = datetime.now()
+            due_date = doc_date + timedelta(days=30)
+
+            # Calculate totals
+            subtotal = sum(item['total'] for item in items)
+            tax_rate = 0.20 if language.startswith('en') else 0.21
+            tax_amount = round(subtotal * tax_rate, 2)
+            total = round(subtotal + tax_amount, 2)
+
+            sample_data.update({
+                'document_number': doc_number,
+                'document_date': doc_date.strftime('%Y-%m-%d'),
+                'due_date': due_date.strftime('%Y-%m-%d'),
+                'items': items,
+                'subtotal': subtotal,
+                'tax_rate': tax_rate,
+                'tax_amount': tax_amount,
+                'total': total,
+                'currency': 'GBP' if language == 'en-GB' else ('USD' if language == 'en-US' else 'EUR')
+            })
+
+            # Add delivery-specific fields
+            if doc_type == 'delivery_note':
+                sample_data['tracking_number'] = f"TRK-{random.randint(100000, 999999)}"
+                sample_data['carrier'] = random.choice(['DHL', 'FedEx', 'UPS', 'DPD'])
+
+            # Add order-specific fields
+            if doc_type == 'order':
+                sample_data['delivery_date'] = (doc_date + timedelta(days=7)).strftime('%Y-%m-%d')
+                sample_data['status'] = 'confirmed'
+
+        return jsonify({'success': True, 'data': sample_data})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/generate', methods=['POST'])
 def generate_document():
     """Generate a single document"""
@@ -146,11 +226,15 @@ def generate_document():
         template_style = data.get('template_style', 'modern')
         output_format = data.get('output_format', 'pdf')
         company_id = data.get('company_id')
+        custom_data = data.get('custom_data')  # Get custom editable data
 
         start_time = time.time()
 
         # Get company data
-        if company_id:
+        if custom_data and 'company' in custom_data:
+            # Use custom company data from editable form
+            company_data = custom_data['company']
+        elif company_id:
             company = session.query(Company).filter_by(id=company_id).first()
             if not company:
                 return jsonify({'error': 'Company not found'}), 404
@@ -162,10 +246,24 @@ def generate_document():
         # Generate document based on type
         if doc_type == 'invoice':
             generator = InvoiceGenerator(language, template_style)
-            doc_data = generator.generate(
-                company_data=company_data,
-                output_format=output_format
-            )
+
+            if custom_data:
+                # Use custom data from editable form
+                doc_data = generator.generate(
+                    company_data=company_data,
+                    customer_data=custom_data.get('customer'),
+                    items=custom_data.get('items'),
+                    invoice_number=custom_data.get('document_number'),
+                    invoice_date=datetime.strptime(custom_data['document_date'], '%Y-%m-%d') if custom_data.get('document_date') else None,
+                    due_date=datetime.strptime(custom_data['due_date'], '%Y-%m-%d') if custom_data.get('due_date') else None,
+                    output_format=output_format
+                )
+            else:
+                # Generate random data
+                doc_data = generator.generate(
+                    company_data=company_data,
+                    output_format=output_format
+                )
         elif doc_type == 'purchase_order':
             generator = PurchaseOrderGenerator(language, template_style)
             doc_data = generator.generate(
@@ -180,16 +278,47 @@ def generate_document():
             )
         elif doc_type == 'order':
             generator = OrderGenerator(language, template_style)
-            doc_data = generator.generate(
-                company_data=company_data,
-                output_format=output_format
-            )
+
+            if custom_data:
+                # Use custom data from editable form
+                doc_data = generator.generate(
+                    company_data=company_data,
+                    customer_data=custom_data.get('customer'),
+                    items=custom_data.get('items'),
+                    order_number=custom_data.get('document_number'),
+                    order_date=datetime.strptime(custom_data['document_date'], '%Y-%m-%d') if custom_data.get('document_date') else None,
+                    delivery_date=datetime.strptime(custom_data['delivery_date'], '%Y-%m-%d') if custom_data.get('delivery_date') else None,
+                    status=custom_data.get('status', 'confirmed'),
+                    output_format=output_format
+                )
+            else:
+                # Generate random data
+                doc_data = generator.generate(
+                    company_data=company_data,
+                    output_format=output_format
+                )
         elif doc_type == 'delivery_note':
             generator = DeliveryNoteGenerator(language, template_style)
-            doc_data = generator.generate(
-                company_data=company_data,
-                output_format=output_format
-            )
+
+            if custom_data:
+                # Use custom data from editable form
+                doc_data = generator.generate(
+                    company_data=company_data,
+                    customer_data=custom_data.get('customer'),
+                    items=custom_data.get('items'),
+                    delivery_note_number=custom_data.get('document_number'),
+                    order_number=custom_data.get('order_number'),
+                    delivery_date=datetime.strptime(custom_data['document_date'], '%Y-%m-%d') if custom_data.get('document_date') else None,
+                    tracking_number=custom_data.get('tracking_number'),
+                    carrier=custom_data.get('carrier'),
+                    output_format=output_format
+                )
+            else:
+                # Generate random data
+                doc_data = generator.generate(
+                    company_data=company_data,
+                    output_format=output_format
+                )
         elif doc_type == 'payslip':
             generator = PayslipGenerator(language, template_style)
             doc_data = generator.generate(
