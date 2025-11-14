@@ -86,6 +86,7 @@ class UBLGenerator:
             'fr': 'EUR',
             'de': 'EUR',
             'es': 'EUR',
+            'it': 'EUR',
         }
         return currency_map.get(language, 'EUR')
 

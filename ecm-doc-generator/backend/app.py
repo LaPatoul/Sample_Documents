@@ -81,6 +81,24 @@ def company_to_dict(company):
     }
 
 
+def serialize_doc_data(doc_data):
+    """Safely serialize document data to JSON, handling Company objects"""
+    def convert_value(obj):
+        if isinstance(obj, Company):
+            return company_to_dict(obj)
+        elif isinstance(obj, (datetime, timedelta)):
+            return str(obj)
+        elif isinstance(obj, dict):
+            return {k: convert_value(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [convert_value(item) for item in obj]
+        else:
+            return obj
+
+    cleaned_data = convert_value(doc_data)
+    return json.dumps(cleaned_data, default=str)
+
+
 def generate_ubl_document(doc_type, doc_data, language):
     """Generate UBL XML document and save to file
 
@@ -90,7 +108,7 @@ def generate_ubl_document(doc_type, doc_data, language):
         language: Language code
 
     Returns:
-        File path to the generated XML file
+        Relative file path to the generated XML file
     """
     # Select appropriate UBL generator
     if doc_type == 'invoice':
@@ -111,16 +129,21 @@ def generate_ubl_document(doc_type, doc_data, language):
     # Generate UBL XML
     xml_content = generator.generate(doc_data, language)
 
-    # Create file path
+    # Create file paths
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"{doc_number}_{timestamp}.xml"
-    file_path = os.path.join(storage_base, folder, filename)
+
+    # Absolute path for writing file
+    absolute_path = os.path.join(storage_base, folder, filename)
+
+    # Relative path for database/API (from backend directory)
+    relative_path = os.path.join('storage', folder, filename)
 
     # Save XML file
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(absolute_path, 'w', encoding='utf-8') as f:
         f.write(xml_content)
 
-    return file_path
+    return relative_path
 
 
 @app.route('/', methods=['GET'])
@@ -139,7 +162,7 @@ def root():
             'stats': '/api/stats'
         },
         'frontend': 'http://172.24.57.39:3000',
-        'supported_languages': ['en-GB', 'en-US', 'fr', 'de', 'es']
+        'supported_languages': ['en-GB', 'en-US', 'fr', 'de', 'es', 'it']
     })
 
 @app.route('/api/health', methods=['GET'])
@@ -425,7 +448,7 @@ def generate_document():
             currency='EUR',
             file_path=doc_data['file_path'],
             file_format=output_format,
-            metadata_json=json.dumps(doc_data, default=str)
+            metadata_json=serialize_doc_data(doc_data)
         )
         session.add(doc)
 
@@ -605,7 +628,7 @@ def generate_bulk():
                 currency='EUR',
                 file_path=doc_data['file_path'],
                 file_format=output_format,
-                metadata_json=json.dumps(doc_data, default=str)
+                metadata_json=serialize_doc_data(doc_data)
             )
             session.add(doc)
 

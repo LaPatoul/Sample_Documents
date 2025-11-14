@@ -181,5 +181,6 @@ def get_generator(language='en-GB'):
         'fr': 'fr_FR',
         'de': 'de_DE',
         'es': 'es_ES',
+        'it': 'it_IT',
     }
     return DataGenerator(locale_map.get(language, 'en_GB'))

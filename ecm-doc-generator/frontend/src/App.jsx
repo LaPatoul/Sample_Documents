@@ -80,6 +80,16 @@ function App() {
               >
                 🇪🇸 ES
               </button>
+              <button
+                onClick={() => changeLanguage('it')}
+                className={`px-3 py-2 rounded-lg transition text-sm ${
+                  i18n.language === 'it'
+                    ? 'bg-white text-primary-600 font-semibold'
+                    : 'bg-primary-700 hover:bg-primary-600'
+                }`}
+              >
+                🇮🇹 IT
+              </button>
             </div>
           </div>
         </div>
