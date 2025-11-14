@@ -309,10 +309,13 @@ def generate_document():
             company_data = get_generator(language).generate_company()
             company_id = None
 
+        # Determine color scheme: use random scheme for random companies, fixed for known companies
+        color_scheme = None if company_id is None else 'blue_professional'
+
         # Generate document based on type
         if doc_type == 'invoice':
             # Generate document data first (without creating PDF if UBL)
-            generator = InvoiceGenerator(language, template_style)
+            generator = InvoiceGenerator(language, template_style, color_scheme=color_scheme)
 
             if custom_data:
                 # Use custom data from editable form

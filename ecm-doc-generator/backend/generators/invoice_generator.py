@@ -9,11 +9,13 @@ from reportlab.lib.units import mm
 from utils.pdf_generator import PDFGenerator
 from utils.i18n import get_translation, format_date, format_currency, get_tax_rate
 from utils.faker_data import get_generator
+from utils.color_schemes import get_color_scheme, rgb_to_hex, get_scheme_for_html
 
 class InvoiceGenerator:
-    def __init__(self, language='fr', template_style='modern'):
+    def __init__(self, language='fr', template_style='modern', color_scheme=None):
         self.language = language
         self.template_style = template_style
+        self.color_scheme = get_color_scheme(color_scheme)  # Get scheme or random
         self.data_gen = get_generator(language)
 
     def generate(self, company_data, customer_data=None, items=None, invoice_number=None,
@@ -123,14 +125,16 @@ class InvoiceGenerator:
         # INVOICE title (right) - professional
         doc_title = get_translation('invoice', self.language).upper()
         c.setFont("Helvetica-Bold", 24)
-        c.setFillColor(HexColor('#2c5282'))  # Professional dark blue
+        primary_hex = rgb_to_hex(self.color_scheme['primary'])
+        c.setFillColor(HexColor(primary_hex))
         title_width = c.stringWidth(doc_title, "Helvetica-Bold", 24)
         c.drawString(width - margin - title_width, y, doc_title)
 
         y -= 15*mm
 
         # Horizontal line separator
-        c.setStrokeColor(HexColor('#cbd5e0'))
+        accent_hex = rgb_to_hex(self.color_scheme['accent'])
+        c.setStrokeColor(HexColor(accent_hex))
         c.setLineWidth(0.5)
         c.line(margin, y, width - margin, y)
 
@@ -217,8 +221,13 @@ class InvoiceGenerator:
 
         col_widths = [85*mm, 18*mm, 15*mm, 30*mm, 27*mm]
         table = Table(table_data, colWidths=col_widths)
+
+        # Use color scheme for table
+        secondary_hex = rgb_to_hex(self.color_scheme['secondary'])
+        background_hex = rgb_to_hex(self.color_scheme['background'])
+
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), HexColor('#2c5282')),
+            ('BACKGROUND', (0, 0), (-1, 0), HexColor(secondary_hex)),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
@@ -229,8 +238,8 @@ class InvoiceGenerator:
             ('FONTSIZE', (0, 1), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#cbd5e0')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, HexColor('#f7fafc')]),
+            ('GRID', (0, 0), (-1, -1), 0.5, HexColor(accent_hex)),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, HexColor(background_hex)]),
         ]))
 
         table.wrapOn(c, width, height)
@@ -329,6 +338,9 @@ class InvoiceGenerator:
         """Create HTML content for invoice"""
         style = 'modern' if self.template_style == 'modern' else 'classic'
 
+        # Get color scheme as hex values for HTML/CSS
+        colors_html = get_scheme_for_html(self.color_scheme)
+
         items_html = ''
         for item in data['items']:
             items_html += f"""
@@ -383,7 +395,7 @@ class InvoiceGenerator:
                     padding: 40px;
                 }}
                 .header {{
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, {colors_html['primary']} 0%, {colors_html['secondary']} 100%);
                     color: white;
                     padding: 30px 40px;
                     margin: 0 0 30px 0;
@@ -408,8 +420,8 @@ class InvoiceGenerator:
                     margin-bottom: 30px;
                 }}
                 .info-box {{
-                    background: #f7fafc;
-                    border: 1px solid #e2e8f0;
+                    background: {colors_html['background']};
+                    border: 1px solid {colors_html['accent']};
                     padding: 15px;
                     width: 45%;
                 }}
@@ -417,7 +429,7 @@ class InvoiceGenerator:
                     margin: 0 0 10px 0;
                     font-size: 12px;
                     text-transform: uppercase;
-                    color: #667eea;
+                    color: {colors_html['primary']};
                 }}
                 .info-box p {{
                     margin: 5px 0;
@@ -429,7 +441,7 @@ class InvoiceGenerator:
                     margin: 20px 0;
                 }}
                 th {{
-                    background: #667eea;
+                    background: {colors_html['secondary']};
                     color: white;
                     padding: 12px;
                     text-align: left;
@@ -437,10 +449,10 @@ class InvoiceGenerator:
                 }}
                 td {{
                     padding: 10px 12px;
-                    border-bottom: 1px solid #e2e8f0;
+                    border-bottom: 1px solid {colors_html['accent']};
                 }}
                 tr:nth-child(even) {{
-                    background: #f7fafc;
+                    background: {colors_html['background']};
                 }}
                 .text-right {{
                     text-align: right;
