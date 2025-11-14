@@ -18,6 +18,12 @@ database/*.db-journal
 storage/invoices/*
 storage/purchase_orders/*
 storage/receipts/*
+storage/orders/*
+storage/delivery_notes/*
+storage/payslips/*
+storage/contracts/*
+storage/expense_reports/*
+storage/id_documents/*
 storage/*.zip
 !storage/*/.gitkeep
 
