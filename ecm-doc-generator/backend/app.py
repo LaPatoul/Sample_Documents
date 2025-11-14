@@ -25,6 +25,7 @@ from generators.contract_generator import ContractGenerator
 from generators.expense_report_generator import ExpenseReportGenerator
 from generators.id_document_generator import IDDocumentGenerator
 from utils.faker_data import get_generator
+from utils.ubl_generator import InvoiceUBLGenerator, OrderUBLGenerator, DespatchAdviceUBLGenerator
 
 app = Flask(__name__)
 CORS(app)
@@ -78,6 +79,48 @@ def company_to_dict(company):
         'website': company.website,
         'is_preset': company.is_preset
     }
+
+
+def generate_ubl_document(doc_type, doc_data, language):
+    """Generate UBL XML document and save to file
+
+    Args:
+        doc_type: Document type (invoice, order, delivery_note)
+        doc_data: Document data dictionary
+        language: Language code
+
+    Returns:
+        File path to the generated XML file
+    """
+    # Select appropriate UBL generator
+    if doc_type == 'invoice':
+        generator = InvoiceUBLGenerator()
+        folder = 'invoices'
+        doc_number = doc_data.get('invoice_number', 'INV-0001')
+    elif doc_type == 'order':
+        generator = OrderUBLGenerator()
+        folder = 'orders'
+        doc_number = doc_data.get('order_number', 'ORD-0001')
+    elif doc_type == 'delivery_note':
+        generator = DespatchAdviceUBLGenerator()
+        folder = 'delivery_notes'
+        doc_number = doc_data.get('delivery_note_number', 'DN-0001')
+    else:
+        raise ValueError(f"UBL format not supported for document type: {doc_type}")
+
+    # Generate UBL XML
+    xml_content = generator.generate(doc_data, language)
+
+    # Create file path
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"{doc_number}_{timestamp}.xml"
+    file_path = os.path.join(storage_base, folder, filename)
+
+    # Save XML file
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(xml_content)
+
+    return file_path
 
 
 @app.route('/', methods=['GET'])
@@ -245,6 +288,7 @@ def generate_document():
 
         # Generate document based on type
         if doc_type == 'invoice':
+            # Generate document data first (without creating PDF if UBL)
             generator = InvoiceGenerator(language, template_style)
 
             if custom_data:
@@ -256,14 +300,19 @@ def generate_document():
                     invoice_number=custom_data.get('document_number'),
                     invoice_date=datetime.strptime(custom_data['document_date'], '%Y-%m-%d') if custom_data.get('document_date') else None,
                     due_date=datetime.strptime(custom_data['due_date'], '%Y-%m-%d') if custom_data.get('due_date') else None,
-                    output_format=output_format
+                    output_format=output_format if output_format != 'ubl' else 'pdf'  # Generate data structure
                 )
             else:
                 # Generate random data
                 doc_data = generator.generate(
                     company_data=company_data,
-                    output_format=output_format
+                    output_format=output_format if output_format != 'ubl' else 'pdf'  # Generate data structure
                 )
+
+            # If UBL format requested, generate UBL XML
+            if output_format == 'ubl':
+                ubl_file_path = generate_ubl_document(doc_type, doc_data, language)
+                doc_data['file_path'] = ubl_file_path
         elif doc_type == 'purchase_order':
             generator = PurchaseOrderGenerator(language, template_style)
             doc_data = generator.generate(
@@ -289,14 +338,19 @@ def generate_document():
                     order_date=datetime.strptime(custom_data['document_date'], '%Y-%m-%d') if custom_data.get('document_date') else None,
                     delivery_date=datetime.strptime(custom_data['delivery_date'], '%Y-%m-%d') if custom_data.get('delivery_date') else None,
                     status=custom_data.get('status', 'confirmed'),
-                    output_format=output_format
+                    output_format=output_format if output_format != 'ubl' else 'pdf'
                 )
             else:
                 # Generate random data
                 doc_data = generator.generate(
                     company_data=company_data,
-                    output_format=output_format
+                    output_format=output_format if output_format != 'ubl' else 'pdf'
                 )
+
+            # If UBL format requested, generate UBL XML
+            if output_format == 'ubl':
+                ubl_file_path = generate_ubl_document(doc_type, doc_data, language)
+                doc_data['file_path'] = ubl_file_path
         elif doc_type == 'delivery_note':
             generator = DeliveryNoteGenerator(language, template_style)
 
@@ -311,14 +365,19 @@ def generate_document():
                     delivery_date=datetime.strptime(custom_data['document_date'], '%Y-%m-%d') if custom_data.get('document_date') else None,
                     tracking_number=custom_data.get('tracking_number'),
                     carrier=custom_data.get('carrier'),
-                    output_format=output_format
+                    output_format=output_format if output_format != 'ubl' else 'pdf'
                 )
             else:
                 # Generate random data
                 doc_data = generator.generate(
                     company_data=company_data,
-                    output_format=output_format
+                    output_format=output_format if output_format != 'ubl' else 'pdf'
                 )
+
+            # If UBL format requested, generate UBL XML
+            if output_format == 'ubl':
+                ubl_file_path = generate_ubl_document(doc_type, doc_data, language)
+                doc_data['file_path'] = ubl_file_path
         elif doc_type == 'payslip':
             generator = PayslipGenerator(language, template_style)
             doc_data = generator.generate(

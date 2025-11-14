@@ -188,7 +188,7 @@ function DocumentForm({ onGenerated }) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Configuration */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Document Type */}
           <div>
             <label className="label">{t('document_type')}</label>
@@ -229,6 +229,24 @@ function DocumentForm({ onGenerated }) {
                   {company.name} {company.is_preset ? '(Peters Engineering)' : ''}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Output Format */}
+          <div>
+            <label className="label">{t('output_format')}</label>
+            <select
+              name="output_format"
+              value={formData.output_format}
+              onChange={handleChange}
+              className="select-field"
+              disabled={showEditableForm}
+            >
+              <option value="pdf">{t('format_pdf')}</option>
+              <option value="html">{t('format_html')}</option>
+              {['invoice', 'order', 'delivery_note'].includes(formData.document_type) && (
+                <option value="ubl">{t('format_ubl')}</option>
+              )}
             </select>
           </div>
         </div>
