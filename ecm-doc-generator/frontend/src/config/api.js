@@ -13,8 +13,8 @@ const getApiBase = () => {
   }
 
   // If accessing via local IP, use local API endpoint
-  if (hostname === '192.168.1.46') {
-    return 'http://192.168.1.46:5000/api';
+  if (hostname === '192.168.1.45') {
+    return 'http://192.168.1.45:5000/api';
   }
 
   // Default to localhost for development
